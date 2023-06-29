@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Typography, Box } from "@mui/material";
 import { useParams } from "react-router-dom";
 
@@ -10,7 +10,8 @@ const SearchFeed = () => {
   const { searchTerm } = useParams();
 
   useEffect(() => {
-    fetchFromAPI(`search?part=snippet&q=${searchTerm}`)
+    const maxResults = 50; // Specify the maximum number of results you want to fetch
+    fetchFromAPI(`search?part=snippet&q=${searchTerm}&maxResults=${maxResults}`)
       .then((data) => setVideos(data.items))
   }, [searchTerm]);
 
