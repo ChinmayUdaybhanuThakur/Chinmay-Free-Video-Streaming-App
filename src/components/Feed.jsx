@@ -1,38 +1,47 @@
-import React, { useEffect, useState } from "react";
-import { Box, Stack, Typography } from "@mui/material";
-
+import React, { useState, useEffect } from 'react';
 import { fetchFromAPI } from "../utils/fetchFromAPI";
 import { Videos, Sidebar } from "./";
 
 const Feed = () => {
   const [selectedCategory, setSelectedCategory] = useState("New");
   const [videos, setVideos] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     setVideos(null);
+    setLoading(true);
 
+    // Step 1: Fetch video IDs from the search endpoint
     fetchFromAPI(`search?part=snippet&q=${selectedCategory}`)
-      .then((data) => setVideos(data.items))
-    }, [selectedCategory]);
+      .then((data) => {
+        console.log('Search API response:', data);
+        const videoIds = data.items.map(item => item.id.videoId).join(',');
+
+        // Step 2: Fetch video statistics for those IDs
+        return fetchFromAPI(`videos?part=snippet,statistics&id=${videoIds}`);
+      })
+      .then((data) => {
+        console.log('Videos API response:', data);
+        // Step 3: Filter videos based on view count
+        const filteredVideos = data.items.filter(video => video.statistics.viewCount > 1000);
+        setVideos(filteredVideos);
+        setLoading(false);
+      })
+      .catch((error) => {
+        console.error('Error fetching videos:', error);
+        setLoading(false);
+      });
+  }, [selectedCategory]);
 
   return (
-    <Stack sx={{ flexDirection: { sx: "column", md: "row" } }}>
-      <Box sx={{ height: { sx: "auto", md: "92vh" }, borderRight: "1px solid #3d3d3d", px: { sx: 0, md: 2 } }}>
-        <Sidebar selectedCategory={selectedCategory} setSelectedCategory={setSelectedCategory} />
-        
-        <Typography className="copyright" variant="body2" sx={{ mt: 1.5, color: "#fff", }}>
-          Copyright © 2022 JSM Media
-        </Typography>
-      </Box>
-
-      <Box p={2} sx={{ overflowY: "auto", height: "90vh", flex: 2 }}>
-        <Typography variant="h4" fontWeight="bold" mb={2} sx={{ color: "white" }}>
-          {selectedCategory} <span style={{ color: "#FC1503" }}>videos</span>
-        </Typography>
-
+    <div>
+      <Sidebar setSelectedCategory={setSelectedCategory} />
+      {loading ? (
+        <p>Loading...</p>
+      ) : (
         <Videos videos={videos} />
-      </Box>
-    </Stack>
+      )}
+    </div>
   );
 };
 
